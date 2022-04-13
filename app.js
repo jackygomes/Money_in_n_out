@@ -4,21 +4,20 @@ if (process.argv.length < 3) {
   process.exit(1);
 }
 // Read the file and print its contents.
-var fs = require("fs"),
-  filename = process.argv[2];
-fs.readFile(filename, "utf8", function (err, data) {
+const fs = require("fs");
+const filename = process.argv[2];
+
+fs.readFile(filename, "utf8", (err, data) => {
   if (err) throw err;
 
-  var inputData = JSON.parse(data);
+  const inputData = JSON.parse(data);
 
   const transactions = [];
 
-  inputData.forEach(function (item) {
+  inputData.forEach((item) => {
     // Cash in block
     if (item.type == "cash_in") {
-      let fee = (item.operation.amount / 100) * 0.03;
-      if (fee > 5) fee = 5;
-      console.log(fee);
+      cashIn(item);
     }
     // Cash in block ends
 
@@ -34,7 +33,36 @@ fs.readFile(filename, "utf8", function (err, data) {
         date: item.date,
         amount: amount,
       };
+
+      // Cash out block legal
+      if (item.user_type == "juridical") {
+        juridicalCashOut(item);
+      }
+      // Cash out block legal ends
     }
     // Cash out block ends
   });
 });
+
+const cashIn = (transaction) => {
+  let fee = (transaction.operation.amount / 100) * 0.03;
+  if (fee > 5) fee = 5;
+  roundedNumber(fee);
+};
+
+const juridicalCashOut = (transaction) => {
+  let fee = (transaction.operation.amount / 100) * 0.3;
+  if (fee < 0.5) fee = 0.5;
+  roundedNumber(fee);
+};
+
+const roundedNumber = (num) => {
+  let rounded = num.toFixed(2);
+
+  const fee =
+    parseFloat(rounded) < num
+      ? parseFloat(rounded) + 0.01
+      : parseFloat(rounded);
+
+  process.stdout.write(fee.toFixed(2) + "\n");
+};
