@@ -11,7 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "@babel/cli": "^7.17.6",
-    "@babel/core": "^7.17.9"
+    "@babel/core": "^7.17.9",
+    "moment": "^2.29.2"
   },
   "devDependencies": {
     "@babel/node": "^7.16.8",

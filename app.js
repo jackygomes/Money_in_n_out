@@ -38,10 +38,14 @@ fs.readFile(filename, "utf8", (err, data) => {
       if (item.user_type == "juridical") {
         juridicalCashOut(item);
       }
+      if (item.user_type == "natural") {
+        naturalCashOut(item);
+      }
       // Cash out block legal ends
     }
     // Cash out block ends
   });
+  console.log(transactions);
 });
 
 const cashIn = (transaction) => {
@@ -54,6 +58,10 @@ const juridicalCashOut = (transaction) => {
   let fee = (transaction.operation.amount / 100) * 0.3;
   if (fee < 0.5) fee = 0.5;
   roundedNumber(fee);
+};
+
+const naturalCashOut = (transaction) => {
+  // roundedNumber(transaction.operation.amount);
 };
 
 const roundedNumber = (num) => {
