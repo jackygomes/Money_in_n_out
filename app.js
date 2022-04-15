@@ -114,24 +114,18 @@ const naturalCashOut = (transaction) => {
 const naturalCashOutCalculation = (amount, deductAmount, deduct) => {
   let excededAmount = 0;
   if(deduct){
+    let fee = 0;
     if (amount > 1000) {
       excededAmount = amount - deductAmount;
-      let fee = (excededAmount / 100) * 0.3;
-      let calculatedData = {
-        fee: fee,
-        excededAmount: excededAmount
-      }
-      return calculatedData;
-      // roundedNumber(fee);
+      fee = (excededAmount / 100) * 0.3;
     } else {
-      let fee = 0.00;
-      let calculatedData = {
-        fee: fee,
-        excededAmount: excededAmount
-      }
-      return calculatedData;
-      // roundedNumber(fee);
+      fee = 0.00;
     }
+    let calculatedData = {
+      fee: fee,
+      excededAmount: excededAmount
+    }
+    return calculatedData;
   }else {
     excededAmount = amount;
     let fee = (excededAmount / 100) * 0.3;
