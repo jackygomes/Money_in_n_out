@@ -1,3 +1,10 @@
+var moment = require("moment");
+moment.updateLocale("en", {
+  week: {
+    dow: 1, // First day of week is Monday
+  },
+});
+
 // Make sure we got a filename on the command line.
 if (process.argv.length < 3) {
   console.log("Usage: node " + process.argv[1] + " FILENAME");
@@ -6,13 +13,12 @@ if (process.argv.length < 3) {
 // Read the file and print its contents.
 const fs = require("fs");
 const filename = process.argv[2];
+const transactions = [];
 
 fs.readFile(filename, "utf8", (err, data) => {
   if (err) throw err;
 
   const inputData = JSON.parse(data);
-
-  const transactions = [];
 
   inputData.forEach((item) => {
     // Cash in block
@@ -23,17 +29,6 @@ fs.readFile(filename, "utf8", (err, data) => {
 
     // Cash out block
     if (item.type == "cash_out") {
-      let amount = item.operation.amount;
-      if (transactions[item.user_id]) {
-        amount = transactions[item.user_id].amount + item.operation.amount;
-      }
-
-      transactions[item.user_id] = {
-        id: item.user_id,
-        date: item.date,
-        amount: amount,
-      };
-
       // Cash out block legal
       if (item.user_type == "juridical") {
         juridicalCashOut(item);
@@ -45,7 +40,6 @@ fs.readFile(filename, "utf8", (err, data) => {
     }
     // Cash out block ends
   });
-  console.log(transactions);
 });
 
 const cashIn = (transaction) => {
@@ -61,8 +55,93 @@ const juridicalCashOut = (transaction) => {
 };
 
 const naturalCashOut = (transaction) => {
-  // roundedNumber(transaction.operation.amount);
+
+  let amount = transaction.operation.amount;
+  let deductAmount = 1000;
+  let deduct = true;
+  let weekNumber = moment(transaction.date, "YYYY-MM-DD").week();
+  let year = moment(transaction.date, "YYYY-MM-DD").year();
+
+  if (transactions[transaction.user_id]) {
+    if ( weekNumber == transactions[transaction.user_id].date.weekNumber && year == transactions[transaction.user_id].date.year ) {
+      if(transactions[transaction.user_id].amount > 1000){
+        deductAmount = 0;
+        deduct = false;
+      }else {
+        amount = transactions[transaction.user_id].amount + transaction.operation.amount;
+      }
+
+      let calculatedData = naturalCashOutCalculation(amount, deductAmount, deduct);
+      roundedNumber(calculatedData.fee);
+
+      transactions[transaction.user_id] = {
+        id: transaction.user_id,
+        date: {
+          weekNumber: weekNumber,
+          year: year,
+        },
+        amount: amount,
+      };
+    } else {
+
+      let calculatedData = naturalCashOutCalculation(amount, deductAmount, deduct);
+      roundedNumber(calculatedData.fee);
+      
+      transactions[transaction.user_id] = {
+        id: transaction.user_id,
+        date: {
+          weekNumber: weekNumber,
+          year: year,
+        },
+        amount: transaction.operation.amount,
+      };
+    }
+  }else {
+    let calculatedData = naturalCashOutCalculation(amount, deductAmount, deduct);
+    roundedNumber(calculatedData.fee);
+    
+    transactions[transaction.user_id] = {
+      id: transaction.user_id,
+      date: {
+        weekNumber: weekNumber,
+        year: year,
+      },
+      amount: amount,
+    };
+  }
 };
+
+const naturalCashOutCalculation = (amount, deductAmount, deduct) => {
+  let excededAmount = 0;
+  if(deduct){
+    if (amount > 1000) {
+      excededAmount = amount - deductAmount;
+      let fee = (excededAmount / 100) * 0.3;
+      let calculatedData = {
+        fee: fee,
+        excededAmount: excededAmount
+      }
+      return calculatedData;
+      // roundedNumber(fee);
+    } else {
+      let fee = 0.00;
+      let calculatedData = {
+        fee: fee,
+        excededAmount: excededAmount
+      }
+      return calculatedData;
+      // roundedNumber(fee);
+    }
+  }else {
+    excededAmount = amount;
+    let fee = (excededAmount / 100) * 0.3;
+    let calculatedData = {
+      fee: fee,
+      excededAmount: excededAmount
+    }
+    return calculatedData;
+  }
+}
 
 const roundedNumber = (num) => {
   let rounded = num.toFixed(2);
