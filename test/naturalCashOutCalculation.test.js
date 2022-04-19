@@ -3,7 +3,7 @@ const naturalCashOutCalculation = require('../src/naturalCashOutCalculation');
 
 test('calculate natural cash out calculated data', () => {
   const calculatedData = {
-      fee: 0.03,
+      fee: 0.3,
       excededAmount: 100
     }
 	expect(
