@@ -1,9 +1,7 @@
-var moment = require("moment");
-moment.updateLocale("en", {
-  week: {
-    dow: 1, // First day of week is Monday
-  },
-});
+const cashIn = require('./resource/cashIn');
+const roundedNumber = require('./resource/roundedNumber');
+const juridicalCashOut = require('./resource/juridicalCashOut');
+const naturalCashOut = require('./resource/naturalCashOut');
 
 // Make sure we got a filename on the command line.
 if (process.argv.length < 3) {
@@ -13,7 +11,6 @@ if (process.argv.length < 3) {
 // Read the file and print its contents.
 const fs = require("fs");
 const filename = process.argv[2];
-const transactions = [];
 
 fs.readFile(filename, "utf8", (err, data) => {
   if (err) throw err;
@@ -23,7 +20,8 @@ fs.readFile(filename, "utf8", (err, data) => {
   inputData.forEach((item) => {
     // Cash in block
     if (item.type == "cash_in") {
-      cashIn(item);
+      let fee = cashIn(item);
+      output(fee);
     }
     // Cash in block ends
 
@@ -31,10 +29,12 @@ fs.readFile(filename, "utf8", (err, data) => {
     if (item.type == "cash_out") {
       // Cash out block legal
       if (item.user_type == "juridical") {
-        juridicalCashOut(item);
+        let fee = juridicalCashOut(item);
+        output(fee);
       }
       if (item.user_type == "natural") {
-        naturalCashOut(item);
+        let fee = naturalCashOut(item);
+        output(fee);
       }
       // Cash out block legal ends
     }
@@ -42,108 +42,7 @@ fs.readFile(filename, "utf8", (err, data) => {
   });
 });
 
-const cashIn = (transaction) => {
-  let fee = (transaction.operation.amount / 100) * 0.03;
-  if (fee > 5) fee = 5;
-  roundedNumber(fee);
-};
-
-const juridicalCashOut = (transaction) => {
-  let fee = (transaction.operation.amount / 100) * 0.3;
-  if (fee < 0.5) fee = 0.5;
-  roundedNumber(fee);
-};
-
-const naturalCashOut = (transaction) => {
-
-  let amount = transaction.operation.amount;
-  let deductAmount = 1000;
-  let deduct = true;
-  let weekNumber = moment(transaction.date, "YYYY-MM-DD").week();
-  let year = moment(transaction.date, "YYYY-MM-DD").year();
-
-  if (transactions[transaction.user_id]) {
-    if ( weekNumber == transactions[transaction.user_id].date.weekNumber && year == transactions[transaction.user_id].date.year ) {
-      if(transactions[transaction.user_id].amount > 1000){
-        deductAmount = 0;
-        deduct = false;
-      }else {
-        amount = transactions[transaction.user_id].amount + transaction.operation.amount;
-      }
-
-      let calculatedData = naturalCashOutCalculation(amount, deductAmount, deduct);
-      roundedNumber(calculatedData.fee);
-
-      transactions[transaction.user_id] = {
-        id: transaction.user_id,
-        date: {
-          weekNumber: weekNumber,
-          year: year,
-        },
-        amount: amount,
-      };
-    } else {
-
-      let calculatedData = naturalCashOutCalculation(amount, deductAmount, deduct);
-      roundedNumber(calculatedData.fee);
-      
-      transactions[transaction.user_id] = {
-        id: transaction.user_id,
-        date: {
-          weekNumber: weekNumber,
-          year: year,
-        },
-        amount: transaction.operation.amount,
-      };
-    }
-  }else {
-    let calculatedData = naturalCashOutCalculation(amount, deductAmount, deduct);
-    roundedNumber(calculatedData.fee);
-    
-    transactions[transaction.user_id] = {
-      id: transaction.user_id,
-      date: {
-        weekNumber: weekNumber,
-        year: year,
-      },
-      amount: amount,
-    };
-  }
-};
-
-const naturalCashOutCalculation = (amount, deductAmount, deduct) => {
-  let excededAmount = 0;
-  if(deduct){
-    let fee = 0;
-    if (amount > 1000) {
-      excededAmount = amount - deductAmount;
-      fee = (excededAmount / 100) * 0.3;
-    } else {
-      fee = 0.00;
-    }
-    let calculatedData = {
-      fee: fee,
-      excededAmount: excededAmount
-    }
-    return calculatedData;
-  }else {
-    excededAmount = amount;
-    let fee = (excededAmount / 100) * 0.3;
-    let calculatedData = {
-      fee: fee,
-      excededAmount: excededAmount
-    }
-    return calculatedData;
-  }
+const output = (fee) => {
+  process.stdout.write(fee.toFixed(2) + "\n");
 }
 
-const roundedNumber = (num) => {
-  let rounded = num.toFixed(2);
-
-  const fee =
-    parseFloat(rounded) < num
-      ? parseFloat(rounded) + 0.01
-      : parseFloat(rounded);
-
-  process.stdout.write(fee.toFixed(2) + "\n");
-};
