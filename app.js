@@ -1,7 +1,7 @@
-const cashIn = require('./resource/cashIn');
-const roundedNumber = require('./resource/roundedNumber');
-const juridicalCashOut = require('./resource/juridicalCashOut');
-const naturalCashOut = require('./resource/naturalCashOut');
+const cashIn = require('./src/cashIn');
+const roundedNumber = require('./src/roundedNumber');
+const juridicalCashOut = require('./src/juridicalCashOut');
+const naturalCashOut = require('./src/naturalCashOut');
 
 // Make sure we got a filename on the command line.
 if (process.argv.length < 3) {
